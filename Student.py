@@ -1,6 +1,3 @@
-from pickle import TRUE
-
-
 class Student:
     def __init__(self, name, age, major):
         self.name = name
