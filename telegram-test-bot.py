@@ -41,7 +41,7 @@ def youtube_url(update: Update, context: CallbackContext):
 def linkedIn_url(update: Update, context: CallbackContext):
     update.message.reply_text(
             "LinkedIn URL => \
-		https://www.linkedin.com/in/dwaipayan-bandyopadhyay-007a/")
+		https://www.linkedin.com/")
 
 
 def geeks_url(update: Update, context: CallbackContext):

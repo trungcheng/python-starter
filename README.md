@@ -21,9 +21,9 @@ Scrapy is a fast high-level screen scraping and web crawling framework, used to 
 Since 2004, BeautifulSoup has been one of the most important libraries for parsing HTML. It is flexible and allows users to create solutions that work with any web page structure.
 Libraries like BeautifulSoup allow programmers to do anything from extracting simple links, tables to more complex analysis and data manipulation.
 
-5. numpy and pandas
+5. Numpy and Pandas
 
-NumPy is the fundamental package for scientific computing in Python and provides a solid foundation on top of which to build your numerical algorithms. Pandas provides powerful data structures and tools to make working with large datasets easier. It can load data in many formats including csv, json, html and others.
+NumPy is the fundamental package for scientific computing in Python and provides a solid foundation on top of which to build your numerical algorithms. Pandas is a library for analytics, data processing, and data science, it provides powerful data structures and tools to make working with large datasets easier. It can load data in many formats including csv, json, html and others.
 
 ## Parse Files
 You can processing many types of files including:
@@ -40,3 +40,7 @@ Web scraping and web data:
 - Python API tutorial (https://www.dataquest.io/blog/python-api-tutorial/)
 - Web scraping (https://pythonbasics.org/pandas-web-scraping/)
 - SQL with Python (https://pythonspot.com/python-database-programming-sqlite-tutorial/)
+
+## A Collection of 25 Awesome Python Scripts (mini projects)
+
+- https://dev.to/harendra21/a-collection-of-25-awesome-python-scripts-mini-projects-3745
