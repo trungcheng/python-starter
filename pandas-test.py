@@ -19,10 +19,10 @@ print(df)
 # read csv
 print('csv')
 pd.options.display.max_rows = 9999
-df = pd.read_csv('data.csv')
+df = pd.read_csv('assets/data.csv')
 print(df)
 
 # read json
 print('json')
-df = pd.read_json('data.json')
+df = pd.read_json('assets/data.json')
 print(df.to_string())
