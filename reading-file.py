@@ -1,4 +1,4 @@
-employees = open("employees.txt", "r")
+employees = open("assets/employees.txt", "r")
 
 print(employees.read())
 # return content of file
