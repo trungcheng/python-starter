@@ -1,21 +1,28 @@
 from bs4 import BeautifulSoup
+from concurrent.futures import ThreadPoolExecutor
 import requests
 import json
 import csv
+import time
 
-shop_page_url = "https://printerval.com/shop"
-product_detail_url = "https://printerval.com{link}"
+shop_page_url = "https://printerval.com/shop?page_id={}"
+product_detail_url = "https://printerval.com{}"
 
 product_url_file = "./assets/product_urls.txt"
-product_file = "./assets/products.txt"
+product_file = "./assets/products.json"
 
 headers = {
-    "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 11_1_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.96 Safari/537.36"}
+    "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 11_1_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.96 Safari/537.36"
+}
+
+MAX_THREADS = 10
+product_detail_list = []
 
 
 def get_title(soup):
     try:
-        title = soup.find("span", attrs={"id": 'productTitle'})
+        title = soup.find(
+            "h1", attrs={'class': 'product-heading js-product-name'})
         title_value = title.string
         title_string = title_value.strip()
     except AttributeError:
@@ -26,27 +33,74 @@ def get_title(soup):
 
 def get_description(soup):
     try:
-        desc = soup.find("span", attrs={"id": 'productDesc'})
-        desc_value = desc.string
-        desc_string = desc_value.strip()
+        desc = soup.find("div", attrs={"class": 'product-detail-description'})
+        desc_content = desc.decode_contents()
     except AttributeError:
-        desc_string = ""
+        desc_content = ""
 
-    return desc_string
+    return desc_content
 
 
-# Function to extract Product Price
 def get_price(soup):
     try:
         price = soup.find(
-            "span", attrs={'id': 'priceblock_ourprice'}).string.strip()
+            "div", attrs={'class': 'product-detail-row product-price'}).string.strip()
     except AttributeError:
         price = ""
 
     return price
 
 
-# Function to extract Product Rating
+def get_old_price(soup):
+    try:
+        old_price = soup.find(
+            "div", attrs={'class': 'product-detail-row product-high-price'}).string.strip()
+    except AttributeError:
+        old_price = ""
+
+    return old_price
+
+
+def get_color(soup):
+    try:
+        color = soup.find(
+            "span", attrs={'id': 'color'}).string.strip()
+    except AttributeError:
+        color = ""
+
+    return color
+
+
+def get_type(soup):
+    try:
+        product_type = soup.find(
+            "span", attrs={'id': 'type'}).string.strip()
+    except AttributeError:
+        product_type = ""
+
+    return product_type
+
+
+def get_style(soup):
+    try:
+        style = soup.find(
+            "span", attrs={'id': 'style'}).string.strip()
+    except AttributeError:
+        style = ""
+
+    return style
+
+
+def get_size(soup):
+    try:
+        size = soup.find(
+            "span", attrs={'id': 'size'}).string.strip()
+    except AttributeError:
+        size = ""
+
+    return size
+
+
 def get_rating(soup):
     try:
         rating = soup.find(
@@ -63,7 +117,6 @@ def get_rating(soup):
     return rating
 
 
-# Function to extract Number of User Reviews
 def get_review_count(soup):
     try:
         review_count = soup.find(
@@ -77,126 +130,90 @@ def get_review_count(soup):
 
 def crawl_product_urls():
     product_urls = []
-    # i = 1
-    # while (i == 1):
-    # print("Crawl page: ", i)
-    # response = requests.get(shop_page_url.format(i))
-    webpage = requests.get(shop_page_url, headers=headers)
+    i = 0
 
-    # if (webpage.status_code != 200):
-    #     break
+    while (i <= 9):
+        print("Start crawl product url page: ", i)
+        webpage = requests.get(shop_page_url.format(i), headers=headers)
 
-    soup = BeautifulSoup(webpage.content, 'lxml')
+        if (webpage.status_code != 200):
+            break
 
-    # link_product_ele = parser.findAll(class_="styles__link--3QJ5N")
-    # Fetch links as List of Tag Objects
-    links = soup.find_all("a", attrs={'class': 'product-link'})
+        soup = BeautifulSoup(webpage.content, 'lxml')
 
-    # if (len(products) == 0):
-    #     break
+        # Fetch links as List of Tag Objects
+        links = soup.find_all("a", attrs={'class': 'product-link'})
 
-    for link in links:
-        product_urls.append(link.get("href"))
+        if (len(links) == 0):
+            break
 
-        # i += 1
+        for link in links:
+            product_urls.append(link.get("href"))
 
-    # return product_list, i
+        print("End crawl product url page: ", i)
+
+        i += 1
+
     return product_urls
 
 
 def save_product_urls(product_urls=[]):
     file = open(product_url_file, "w+")
     str = "\n".join(product_urls)
+    file.seek(0)
+    file.truncate()
     file.write(str)
     file.close()
-    print("Save file: ", product_url_file)
 
 
-def crawl_product(product_urls=[]):
-    product_detail_list = []
-    key = 0
+def crawl_url(url=''):
+    webpage = requests.get(
+        product_detail_url.format(url), headers=headers)
 
-    for product_url in product_urls:
-        webpage = requests.get(
-            product_detail_url.format(product_url), headers=headers)
+    new_soup = BeautifulSoup(webpage.content, "lxml")
 
-        new_soup = BeautifulSoup(webpage.content, "lxml")
+    product_detail_list.append({
+        'title': get_title(new_soup),
+        'description': get_description(new_soup),
+        'price': get_price(new_soup),
+        'old_price': get_old_price(new_soup)
+    })
 
-        product_detail_list[key]['title'] = get_title(new_soup)
-        product_detail_list[key]['description'] = get_description(new_soup)
-        product_detail_list[key]['price'] = get_price(new_soup)
-        product_detail_list[key]['rating'] = get_price(new_soup)
-        product_detail_list[key]['review_count'] = get_price(new_soup)
-
-        key += 1
-
-    return product_detail_list
+    # time.sleep(0.25)
+    print('Crawled ' + str(url))
 
 
-# flatten_field = ["badges", "inventory", "categories", "rating_summary",
-#                  "brand", "seller_specifications", "current_seller", "other_sellers",
-#                  "configurable_options",  "configurable_products", "specifications", "product_links",
-#                  "services_and_promotions", "promotions", "stock_item", "installment_info"]
+def crawl_products(product_urls=[]):
+    print("Crawl product starting...")
+
+    threads = min(MAX_THREADS, len(product_urls))
+
+    with ThreadPoolExecutor(max_workers=threads) as executor:
+        executor.map(crawl_url, product_urls)
+
+    file = open(product_file, "w+")
+    file.seek(0)
+    file.truncate()
+    json.dump(product_detail_list, file, indent=4)
+    file.close()
+
+    print("Save file: ", product_file)
 
 
-# def adjust_product(product):
-#     e = json.loads(product)
-#     if not e.get("id", False):
-#         return None
+def main():
+    product_urls = crawl_product_urls()
 
-#     for field in flatten_field:
-#         if field in e:
-#             e[field] = json.dumps(
-#                 e[field], ensure_ascii=False).replace('\n', '')
+    print("Number of product urls: ", len(product_urls))
 
-#     return e
+    save_product_urls(product_urls)
 
+    t0 = time.time()
 
-# def save_raw_product(product_detail_list=[]):
-#     file = open(product_data_file, "w+")
-#     str = "\n".join(product_detail_list)
-#     file.write(str)
-#     file.close()
-#     print("Save file: ", product_data_file)
+    crawl_products(product_urls)
+
+    t1 = time.time()
+
+    print(f"{t1-t0} seconds to download {len(product_urls)} products.")
 
 
-# def load_raw_product():
-#     file = open(product_data_file, "r")
-#     return file.readlines()
-
-
-# def save_product_list(product_json_list):
-#     file = open(product_file, "w")
-#     csv_writer = csv.writer(file)
-
-#     count = 0
-#     for p in product_json_list:
-#         if p is not None:
-#             if count == 0:
-#                 header = p.keys()
-#                 csv_writer.writerow(header)
-#                 count += 1
-#             csv_writer.writerow(p.values())
-#     file.close()
-#     print("Save file: ", product_file)
-
-
-product_urls = crawl_product_urls()
-
-# print("No. Page: ", page)
-print("Number of product urls: ", len(product_urls))
-
-# save product id for backup
-save_product_urls(product_urls)
-
-# # crawl detail for each product id
-# product_list = crawl_product(product_list)
-
-# # save product detail for backup
-# save_raw_product(product_list)
-
-# # product_list = load_raw_product()
-# # flatten detail before converting to csv
-# product_json_list = [adjust_product(p) for p in product_list]
-# # save product to csv
-# save_product_list(product_json_list)
+main()
