@@ -2,10 +2,8 @@ from bs4 import BeautifulSoup
 from concurrent.futures import ThreadPoolExecutor
 import requests
 import json
-import csv
 import time
 import random
-import urllib.request
 import mysql.connector
 import os
 from dotenv import load_dotenv
